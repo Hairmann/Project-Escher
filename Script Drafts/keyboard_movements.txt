@@ -1,0 +1,96 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class KeyboardMovement : MonoBehaviour
+{
+    private float x;
+    private float z;
+    private Vector3 velocity;
+    private bool isGrounded;
+    private float speedStandart;
+    private Vector3 jumpMomentum;
+    private LayerMask groundMask;
+
+    [SerializeField] private CharacterController controller;
+    [SerializeField] private float speed = 8f;
+    [SerializeField] private float speedSprint = 12f;
+    [SerializeField] private float speedSteering = 2f;
+    [SerializeField] private Transform groundChecker;
+    [SerializeField] private float groundDistance = 0.4f;
+    [SerializeField] private float jumpHeight = 3f;
+
+    public float gravity = -1 * GravityConst.gravityConst;
+    public float fallMultiplier = 2.5f;
+    public float lowJumpMultiplier = 2f;
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        speedStandart = speed;
+
+        //создание правильной маски слоев groundMask
+        int layerGround = 1 << 9;
+        int layerPickable = 1 << 10;
+        int layerConstruction = 1 << 12;
+        groundMask = layerGround | layerPickable | layerConstruction;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        //проверка на приземление для гравитации
+        isGrounded = Physics.CheckSphere(groundChecker.position, groundDistance, groundMask);
+        if (isGrounded && velocity.y < 0)
+        {
+            velocity.y = -2f;
+        }
+        
+
+        //ввод fps controls
+        x = Input.GetAxis("Horizontal");
+        z = Input.GetAxis("Vertical");
+
+        speed = speedStandart;
+        //спринт (только на земле)
+        if (Input.GetKey(KeyCode.LeftShift) && isGrounded)
+        {
+            speed = speedSprint;
+        }
+        
+
+        Vector3 move = transform.right * x + transform.forward * z;
+        move *= speed;
+        move = Vector3.ClampMagnitude(move, speed);
+
+        //сохранение направления и импульса прыжка
+        if (isGrounded == false)
+        {
+            move = jumpMomentum;
+            move += transform.right * x * speedSteering + transform.forward * z * speedSteering * 1.5f;
+            //speed = speedSteering;
+            //Debug.Log("в воздухе");
+        }
+
+        controller.Move(move * Time.deltaTime);
+        
+        //прыжок
+        if(Input.GetButtonDown("Jump") && isGrounded)
+        {
+            jumpMomentum = move;
+            velocity.y = Mathf.Sqrt(jumpHeight * -2 * gravity);
+        }
+        
+        //applying gravity (via y axis)
+        velocity.y += gravity * Time.deltaTime * (fallMultiplier - 1); //fall multiplier - для увеличения силы тяжести и придания чувства более увесистого прыжка
+        controller.Move(velocity * Time.deltaTime);
+
+        //Debug.Log("isGrounded? " + isGrounded);
+        /*
+        Debug.Log("скорость падения" + velocity);
+        
+        Debug.Log("move vector " + move.magnitude);
+        */
+        
+    }
+}

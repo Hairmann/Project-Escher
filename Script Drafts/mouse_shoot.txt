@@ -1,0 +1,73 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class MouseShoot : MonoBehaviour
+{
+    private Camera playerCamera;
+    private bool isHolding;
+    private Pickable pickedObject;
+    private LayerMask groundLayer = 1 << 9;
+
+    [SerializeField] float holdDistance = 3f;
+    
+    void Start()
+    {
+        playerCamera = GetComponent<Camera>();
+        isHolding = false;
+    }
+    
+    void Update()
+    {
+        if (Input.GetMouseButtonDown(1))
+        {
+            if (isHolding)
+            {
+                pickedObject.isPicked = false;
+                pickedObject.playerCamera = null;
+                pickedObject.drop();
+
+                isHolding = false;
+            }
+            else
+            {
+                Vector3 cameraCenter = new Vector3(playerCamera.pixelWidth / 2, playerCamera.pixelHeight / 2, 0);
+                Ray ray = playerCamera.ScreenPointToRay(cameraCenter);
+                RaycastHit hit;
+
+                if (Physics.Raycast(ray, out hit, 5f))
+                {
+                    GameObject hitObject = hit.collider.gameObject;
+                    Pickable pickable = hitObject.GetComponent<Pickable>();
+                    if (pickable != null)
+                    {
+                        pickable.standartHoldDistance = holdDistance;
+                        pickable.playerCamera = playerCamera;
+                        pickedObject = pickable;
+                        pickable.isPicked = true;
+                        pickable.startHolding();
+
+                        isHolding = true;
+                    }
+                }
+            }
+            
+        }
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            Vector3 cameraCenter = new Vector3(playerCamera.pixelWidth / 2, playerCamera.pixelHeight / 2, 0);
+            Ray ray = playerCamera.ScreenPointToRay(cameraCenter);
+            RaycastHit hit;
+
+            if (Physics.Raycast(ray, out hit, Mathf.Infinity, groundLayer))
+            {
+                Vector3 newGravityVector = hit.normal;
+                GravityConst.gravityVector = -1 * newGravityVector;
+                Physics.gravity = -1 * newGravityVector * GravityConst.gravityConst;
+
+
+            }
+        }
+    }
+}
