@@ -8,3 +8,5 @@ In the uploaded version character controller is implemented as a rigidbody (opti
 Gravity rotation is implemented via quaternions. 
 
 To run the app execute Build\Project Escher.exe
+
+
